@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stochastik-Casino: Roulette-Simulation</title>
+    <!-- Tailwind CSS für modernes, ansprechendes UI-Design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght=600;800&family=Inter:wght=300;400;600;700&display=swap');
+        
+        .font-casino {
+            font-family: 'Cinzel', serif;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur py-4 px-6 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <span class="font-casino text-slate-950 text-xl font-bold">C</span>
+                </div>
+                <div>
+                    <h1 class="font-casino text-xl sm:text-2xl font-extrabold tracking-wider text-amber-400">STOCHASTIK-CASINO</h1>
+                    <p class="text-xs text-slate-400 tracking-widest uppercase">Station 2: Roulette</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full flex-grow items-start">
+        
+        <!-- Left: Instructions & Canvas Wheel -->
+        <div class="lg:col-span-7 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md flex flex-col items-center">
+            
+            <!-- Roulette Wheel Container -->
+            <div class="relative flex flex-col items-center justify-center my-4">
+                <!-- Pointer/Marker at the top -->
+                <div class="absolute -top-4 z-10 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[25px] border-t-amber-500 filter drop-shadow-md"></div>
+                
+                <!-- Canvas for the Wheel -->
+                <canvas id="rouletteWheel" width="360" height="360" class="max-w-full rounded-full border-4 border-slate-950 shadow-2xl shadow-black/80"></canvas>
+                
+                <!-- Inner Decorative Cover -->
+                <div class="absolute w-16 h-16 rounded-full bg-slate-950 border-2 border-slate-800 flex items-center justify-center shadow-inner">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 opacity-90 shadow"></div>
+                </div>
+            </div>
+
+            <!-- Spin Trigger -->
+            <div class="w-full flex flex-col sm:flex-row gap-4 justify-center items-center mt-6">
+                <button id="spinBtn" onclick="spinWheel()" class="w-full sm:w-64 py-4 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-98 transition duration-150 text-center font-casino tracking-wider text-lg">
+                    Rien ne va plus
+                </button>
+            </div>
+        </div>
+
+        <!-- Right: Results & Live Statistics -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Result Display -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md text-center">
+                <span class="text-xs uppercase tracking-widest text-slate-500 font-semibold">Letztes Ergebnis</span>
+                <div class="flex justify-center items-center gap-6 mt-4">
+                    <div id="resultNumber" class="w-24 h-24 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center shadow-lg transition-all duration-300">
+                        <span class="text-5xl font-extrabold font-casino text-slate-400">?</span>
+                    </div>
+                    <div class="text-left">
+                        <div id="resultColorText" class="text-2xl font-bold text-slate-300 font-casino">-</div>
+                        <div id="resultProperties" class="text-xs text-slate-500 mt-1">Bereit für die Drehung</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats & History Grid -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-casino text-slate-300 font-bold tracking-wide">Testreihen-Protokoll</h3>
+                    <span id="spinCounter" class="bg-slate-950 px-3 py-1 rounded-full text-xs font-semibold text-amber-400 border border-slate-800">
+                        Drehungen: 0
+                    </span>
+                </div>
+
+                <!-- Scrollable list of last spins -->
+                <div class="bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-hidden h-48 flex flex-col justify-between">
+                    <div id="historyContainer" class="p-4 overflow-y-auto space-y-2 text-sm flex-grow">
+                        <p id="emptyHistoryText" class="text-slate-600 text-center py-12 italic">Noch keine Drehungen durchgeführt.</p>
+                    </div>
+                    <button onclick="resetHistory()" class="w-full py-2 bg-slate-900 hover:bg-slate-800/80 text-xs text-slate-400 border-t border-slate-800 transition duration-150">
+                        Verlauf & Zähler zurücksetzen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950/80 py-4 px-6 text-center text-xs text-slate-500">
+        <div class="max-w-6xl mx-auto">
+            Stochastik-Casino-Simulator | Dr.-Ing. Daniel Eggert | Bismarck-Gymnasium Genthin
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. Definitionen der Roulette-Felder nach Standard-Kessel-Layout ---
+        const WHEEL_LAYOUT = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+        const ROTE_ZAHLEN = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        const SCHWARZE_ZAHLEN = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
+
+        // --- 2. Mathematische Gewichte (Gezinkt auf 60% Rot) ---
+        const pRot = 0.60;
+        const pRest = 0.40;
+        const weights = [];
+
+        for (let i = 0; i <= 36; i++) {
+            if (ROTE_ZAHLEN.includes(i)) {
+                weights.push(pRot / ROTE_ZAHLEN.length);
+            } else if (SCHWARZE_ZAHLEN.includes(i)) {
+                weights.push((pRest * (18/19)) / SCHWARZE_ZAHLEN.length);
+            } else {
+                weights.push(pRest * (1/19));
+            }
+        }
+
+        // --- 3. App-Zustand ---
+        let currentRotation = 0; // Aktueller Winkel des Rades in Bogenmaß
+        let isSpinning = false;
+        let totalSpins = 0;
+        let countRed = 0;
+        let countBlack = 0;
+        let countGreen = 0;
+
+        // Canvas initialisieren
+        const canvas = document.getElementById('rouletteWheel');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Canvas Auflösung anpassen
+        canvas.width = 360 * dpr;
+        canvas.height = 360 * dpr;
+        ctx.scale(dpr, dpr);
+
+        // --- 4. Roulette-Kessel auf Canvas zeichnen ---
+        function drawWheel(angle = 0) {
+            const size = 360;
+            const center = size / 2;
+            const radius = center - 10;
+            
+            ctx.clearRect(0, 0, size, size);
+            
+            ctx.save();
+            ctx.translate(center, center);
+            ctx.rotate(angle);
+
+            const segmentAngle = (2 * Math.PI) / 37;
+
+            for (let i = 0; i < 37; i++) {
+                const num = WHEEL_LAYOUT[i];
+                let color = "#222222"; // Schwarz
+                
+                if (num === 0) {
+                    color = "#15803d"; // Grün
+                } else if (ROTE_ZAHLEN.includes(num)) {
+                    color = "#b91c1c"; // Rot
+                }
+
+                // Segment zeichnen
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius, i * segmentAngle - Math.PI/2 - segmentAngle/2, (i + 1) * segmentAngle - Math.PI/2 - segmentAngle/2);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+                
+                // Rahmenlinie
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "#475569";
+                ctx.stroke();
+
+                // Zahl platzieren
+                ctx.save();
+                ctx.rotate(i * segmentAngle);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#f8fafc";
+                ctx.font = "bold 13px 'Cinzel', serif";
+                ctx.fillText(num, 0, -radius + 25);
+                ctx.restore();
+            }
+
+            // Kessel-Innenteller (Holzoptik-Zierring)
+            ctx.beginPath();
+            ctx.arc(0, 0, radius - 40, 0, 2 * Math.PI);
+            ctx.fillStyle = "#1e293b";
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#92400e";
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Erstmaliges Zeichnen
+        drawWheel(0);
+
+        // --- 5. Logik der gezinkten Ziehung ---
+        function getWeightedRandom() {
+            const r = Math.random();
+            let sum = 0;
+            for (let i = 0; i <= 36; i++) {
+                sum += weights[i];
+                if (r <= sum) {
+                    return i;
+                }
+            }
+            return 36;
+        }
+
+        // --- 6. Dreh-Animation ---
+        function spinWheel() {
+            if (isSpinning) return;
+            
+            const spinBtn = document.getElementById('spinBtn');
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            isSpinning = true;
+
+            // Zinkung im Hintergrund durchführen
+            const winningNumber = getWeightedRandom();
+            
+            // Finde den Index im Kessel-Layout
+            const targetIndex = WHEEL_LAYOUT.indexOf(winningNumber);
+            const segmentAngle = 360 / 37;
+            
+            // Berechne den absoluten Zielwinkel, damit das Segment oben (bei 0 Rad Abweichung) stoppt
+            const targetAngleDeg = (37 - targetIndex) * segmentAngle;
+            const targetAngleRad = targetAngleDeg * Math.PI / 180;
+            
+            // Zusätzliche Volldrehungen für ein authentisches Casino-Gefühl
+            const extraSpins = 4 + Math.floor(Math.random() * 3);
+            const startAngle = currentRotation;
+            
+            // Berechne den minimalen positiven Winkelunterschied, um stotterfreie Drehungen im Uhrzeigersinn zu garantieren
+            let angleDiff = targetAngleRad - (startAngle % (2 * Math.PI));
+            if (angleDiff <= 0) {
+                angleDiff += 2 * Math.PI;
+            }
+            
+            const endAngle = startAngle + angleDiff + (extraSpins * 2 * Math.PI);
+            
+            const duration = 4000; // 4 Sekunden Drehung
+            const startTime = performance.now();
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Cubic ease-out für einen weichen Auslauf
+                const ease = 1 - Math.pow(1 - progress, 3);
+                
+                currentRotation = startAngle + (endAngle - startAngle) * ease;
+                drawWheel(currentRotation);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Animation beendet, aktuellen Winkel im Bereich [0, 2*PI] normieren
+                    currentRotation = currentRotation % (2 * Math.PI);
+                    displayResult(winningNumber);
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    isSpinning = false;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- 7. Ergebnisanzeige & Statistik-Updates ---
+        function displayResult(num) {
+            const resNum = document.getElementById('resultNumber');
+            const resColorText = document.getElementById('resultColorText');
+            const resProperties = document.getElementById('resultProperties');
+            
+            let colorName = "Schwarz";
+            let colorClass = "bg-slate-950";
+            let textClass = "text-slate-300";
+            
+            if (num === 0) {
+                colorName = "Grün";
+                colorClass = "bg-emerald-700";
+                textClass = "text-emerald-400";
+                countGreen++;
+            } else if (ROTE_ZAHLEN.includes(num)) {
+                colorName = "Rot";
+                colorClass = "bg-rose-700";
+                textClass = "text-rose-500";
+                countRed++;
+            } else {
+                countBlack++;
+            }
+
+            totalSpins++;
+
+            // Zahl-Anzeige aktualisieren
+            resNum.className = `w-24 h-24 rounded-2xl ${colorClass} border-2 border-slate-700 flex items-center justify-center shadow-lg transition-all duration-300 scale-105`;
+            resNum.innerHTML = `<span class="text-5xl font-extrabold font-casino text-white">${num}</span>`;
+            
+            // Farb-Anzeige aktualisieren
+            resColorText.textContent = colorName;
+            resColorText.className = `text-2xl font-bold ${textClass} font-casino`;
+            
+            resProperties.textContent = num % 2 === 0 && num !== 0 ? "Gerade" : (num === 0 ? "Null" : "Ungerade");
+
+            // Historie befüllen
+            const historyContainer = document.getElementById('historyContainer');
+            const emptyText = document.getElementById('emptyHistoryText');
+            if (emptyText) emptyText.remove();
+
+            const entry = document.createElement('div');
+            entry.className = "flex justify-between items-center bg-slate-900 border border-slate-800/80 px-3 py-2 rounded-lg transition-all duration-150 animate-fadeIn";
+            
+            let bulletColor = "bg-slate-400";
+            if (num === 0) bulletColor = "bg-emerald-500";
+            else if (ROTE_ZAHLEN.includes(num)) bulletColor = "bg-rose-500";
+
+            entry.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full ${bulletColor}"></span>
+                    <span class="font-semibold text-slate-200">Spinn #${totalSpins < 10 ? '0' + totalSpins : totalSpins}</span>
+                </div>
+                <span class="font-mono text-xs text-slate-400">Gelandet auf: <strong class="text-slate-200">${num} (${colorName})</strong></span>
+            `;
+
+            historyContainer.insertBefore(entry, historyContainer.firstChild);
+
+            // Counter updaten
+            const counter = document.getElementById('spinCounter');
+            counter.textContent = `Drehungen: ${totalSpins}`;
+
+            // Live-Statistiken aktualisieren
+            updateStatistics();
+        }
+
+        // --- 8. Statistik-Berechnungen ---
+        function updateStatistics() {
+            if (totalSpins === 0) return;
+
+            const pRedReal = ((countRed / totalSpins) * 100).toFixed(1);
+            const pBlackReal = ((countBlack / totalSpins) * 100).toFixed(1);
+            const pGreenReal = ((countGreen / totalSpins) * 100).toFixed(1);
+
+            // Sicherer Zugriff: Nur updaten, wenn die Elemente im HTML existieren
+            const statRed = document.getElementById('statRed');
+            const barRed = document.getElementById('barRed');
+            const statBlack = document.getElementById('statBlack');
+            const barBlack = document.getElementById('barBlack');
+            const statGreen = document.getElementById('statGreen');
+            const barGreen = document.getElementById('barGreen');
+
+            if (statRed) statRed.textContent = `${pRedReal}% (${countRed})`;
+            if (barRed) barRed.style.width = `${pRedReal}%`;
+
+            if (statBlack) statBlack.textContent = `${pBlackReal}% (${countBlack})`;
+            if (barBlack) barBlack.style.width = `${pBlackReal}%`;
+
+            if (statGreen) statGreen.textContent = `${pGreenReal}% (${countGreen})`;
+            if (barGreen) barGreen.style.width = `${pGreenReal}%`;
+        }
+
+        // --- 9. Zurücksetzen ---
+        function resetHistory() {
+            totalSpins = 0;
+            countRed = 0;
+            countBlack = 0;
+            countGreen = 0;
+
+            const counter = document.getElementById('spinCounter');
+            if (counter) {
+                counter.className = "bg-slate-950 px-3 py-1 rounded-full text-xs font-semibold text-amber-400 border border-slate-800";
+                counter.textContent = "Drehungen: 0";
+            }
+
+            const historyContainer = document.getElementById('historyContainer');
+            if (historyContainer) {
+                historyContainer.innerHTML = '<p id="emptyHistoryText" class="text-slate-600 text-center py-12 italic">Noch keine Drehungen durchgeführt.</p>';
+            }
+
+            const resNum = document.getElementById('resultNumber');
+            if (resNum) {
+                resNum.className = "w-24 h-24 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center shadow-lg transition-all duration-300";
+                resNum.innerHTML = '<span class="text-5xl font-extrabold font-casino text-slate-400">?</span>';
+            }
+            
+            const resColorText = document.getElementById('resultColorText');
+            if (resColorText) {
+                resColorText.textContent = "-";
+                resColorText.className = "text-2xl font-bold text-slate-300 font-casino";
+            }
+            
+            const resProperties = document.getElementById('resultProperties');
+            if (resProperties) {
+                resProperties.textContent = "Bereit für die Drehung";
+            }
+
+            // Sicherer Reset der Dev-Stats (falls vorhanden)
+            const statRed = document.getElementById('statRed');
+            const barRed = document.getElementById('barRed');
+            const statBlack = document.getElementById('statBlack');
+            const barBlack = document.getElementById('barBlack');
+            const statGreen = document.getElementById('statGreen');
+            const barGreen = document.getElementById('barGreen');
+
+            if (statRed) statRed.textContent = "0% (0)";
+            if (barRed) barRed.style.width = "0%";
+            if (statBlack) statBlack.textContent = "0% (0)";
+            if (barBlack) barBlack.style.width = "0%";
+            if (statGreen) statGreen.textContent = "0% (0)";
+            if (barGreen) barGreen.style.width = "0%";
+        }
+
+        // --- 10. Entwickler-Modus togglen ---
+        function toggleDeveloperStats() {
+            const devStats = document.getElementById('devStatsBox');
+            if (devStats) {
+                devStats.classList.toggle('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
